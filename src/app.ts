@@ -1,20 +1,9 @@
-import express, { Request, Response, NextFunction } from 'express';
-import { config } from './config';
+import express, { Request, Response } from 'express';
 import { handleSurveyResponse } from './handlers/survey-state.handler';
 
 export function createApp(): express.Application {
   const app = express();
   app.use(express.json());
-
-  // ── Autenticación por secret header ──────────────────────────────────────────
-  function requireSecret(req: Request, res: Response, next: NextFunction): void {
-    const secret = req.headers['x-webhook-secret'];
-    if (secret !== config.server.webhookSecret) {
-      res.status(401).json({ error: 'Unauthorized' });
-      return;
-    }
-    next();
-  }
 
   // ── Health check ──────────────────────────────────────────────────────────────
   app.get('/health', (_req, res) => {
@@ -35,7 +24,7 @@ export function createApp(): express.Application {
    *   - true  → el mensaje fue una respuesta de encuesta; el bot NO debe procesar más
    *   - false → el mensaje no pertenece a ninguna encuesta activa; el bot continúa normalmente
    */
-  app.post('/webhook/survey-response', requireSecret, async (req: Request, res: Response) => {
+  app.post('/webhook/survey-response', async (req: Request, res: Response) => {
     const { guestId, message } = req.body as { guestId?: string; message?: string };
 
     if (!guestId || typeof message !== 'string') {

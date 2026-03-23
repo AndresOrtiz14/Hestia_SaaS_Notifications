@@ -17,7 +17,6 @@ export const config = {
   },
   server: {
     port: Number.parseInt(process.env.PORT ?? '4000', 10),
-    webhookSecret: required('WEBHOOK_SECRET'),
   },
   whatsapp: {
     verifyToken: required('WHATSAPP_VERIFY_TOKEN'),
