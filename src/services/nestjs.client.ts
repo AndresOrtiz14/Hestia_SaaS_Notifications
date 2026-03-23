@@ -105,6 +105,10 @@ class NestjsClient {
     return this.request<T>('GET', path, { params });
   }
 
+  async _post<T>(path: string, body?: unknown): Promise<T | null> {
+    return this.request<T>('POST', path, { body });
+  }
+
   async _put<T>(path: string, body?: unknown): Promise<T | null> {
     return this.request<T>('PUT', path, { body });
   }

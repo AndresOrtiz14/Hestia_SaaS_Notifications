@@ -18,6 +18,8 @@ export interface TicketDto {
   assignedToUserId: string | null;
   requiresApproval: boolean;
   notifyGuestPending: boolean;
+  /** Estado que disparó la notificación (guardado en el backend al momento del cambio). */
+  notifyGuestStatus: string | null;
   createdAt: string;
   dueAt: string | null;
 }

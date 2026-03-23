@@ -1,4 +1,5 @@
 import * as conversations from '../services/conversations/conversation.service';
+import * as csatSurveys from '../services/csat-surveys/csat-survey.service';
 import { ConversationDto } from '../services/conversations/conversation.schemas';
 import * as guests from '../services/guests/guest.service';
 import * as properties from '../services/properties/property.service';
@@ -9,20 +10,21 @@ import { conversationCsatQ1 } from '../messages/csat.messages';
 
 /**
  * Ejecuta un ciclo de polling:
- * 1. Obtiene todas las conversaciones con csatRequired=true del backend.
+ * 1. Obtiene conversaciones listas para CSAT de FAQ del backend:
+ *      faqHitCount > 0 AND csatRequired=false AND lastActivityAt < NOW() - FAQ_SURVEY_DELAY_SECONDS
+ *    El chequeo del delay lo hace el notification-service pasando delaySeconds al endpoint.
  * 2. Verifica bot_csat_faqs_enabled para la propiedad.
  *    Si está desactivado, omite el envío sin modificar el estado.
- * 3. Por cada una, obtiene en paralelo el guest y las credenciales de la property (cacheadas).
- * 4. Resuelve el canal de notificación y envía el mensaje CSAT.
- * 5. Marca csatRequired=false para no reenviar en el siguiente ciclo.
- *
- * El almacenamiento y seguimiento de la respuesta CSAT lo gestiona otro servicio.
+ * 3. Obtiene en paralelo guest y property (cacheada).
+ * 4. Crea el registro csat_surveys { trigger:'faq', status:'pending' } en el backend.
+ * 5. Resuelve el canal y envía Q1.
+ * 6. Marca csatRequired=true para excluirla en próximos ciclos.
  */
 export async function runConversationCsatWorker(): Promise<void> {
   let pending: ConversationDto[];
 
   try {
-    pending = await conversations.getCsatRequired();
+    pending = await conversations.getFaqCsatReady();
   } catch (err) {
     console.error('[conversation-csat-worker] Error obteniendo conversaciones pendientes:', err);
     return;
@@ -65,14 +67,33 @@ async function processCsatConversation(conversation: ConversationDto): Promise<v
       return;
     }
 
+    // Crear registro en csat_surveys para trackear respuestas (Q1, Q2)
+    const survey = await csatSurveys.create({
+      ticketId:       null,
+      propertyId:     conversation.propertyId,
+      organizationId: conversation.organizationId,
+      guestId:        conversation.guestId,
+      conversationId: conversation.id,
+      surveyTrigger:  'faq',
+    });
+
+    if (!survey) {
+      console.error('[conversation-csat-worker] csat_survey_create_failed', {
+        conversationId: conversation.id,
+      });
+      return;
+    }
+
     const channel = resolveChannel(guest, property);
     await channel.send(conversationCsatQ1());
+    await csatSurveys.markSent(survey.id);
     await conversations.markCsatSent(conversation.id);
 
     console.log('[conversation-csat-worker] csat_sent', {
       conversationId: conversation.id,
-      propertyId: conversation.propertyId,
-      guest: `${guest.phonePrefix}${guest.phoneNumber}`,
+      surveyId:       survey.id,
+      propertyId:     conversation.propertyId,
+      guest:          `${guest.phonePrefix}${guest.phoneNumber}`,
     });
   } catch (err) {
     console.error('[conversation-csat-worker] processing_failed', {

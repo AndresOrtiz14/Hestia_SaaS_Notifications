@@ -1,4 +1,5 @@
 import * as tickets from '../services/tickets/ticket.service';
+import * as csatSurveys from '../services/csat-surveys/csat-survey.service';
 import { TicketDto } from '../services/tickets/ticket.schemas';
 import * as guests from '../services/guests/guest.service';
 import * as properties from '../services/properties/property.service';
@@ -6,7 +7,12 @@ import * as conversations from '../services/conversations/conversation.service';
 import * as featureFlags from '../services/feature-flags/feature-flag.service';
 import { FeatureFlagKeys } from '../services/feature-flags/feature-flag.keys';
 import { resolveChannel } from '../channels/channel.resolver';
-import { ticketInProgress, ticketResolved, resolveLanguage } from '../messages/ticket.messages';
+import {
+  ticketAssigned,
+  ticketInProgress,
+  ticketResolved,
+  resolveLanguage,
+} from '../messages/ticket.messages';
 
 /**
  * Ejecuta un ciclo de polling:
@@ -16,8 +22,12 @@ import { ticketInProgress, ticketResolved, resolveLanguage } from '../messages/t
  * 3. Solo procesa tickets que tengan guestId (sin huésped no hay a quién notificar).
  * 4. Obtiene en paralelo: guest, property y conversación asociada al ticket.
  * 5. Toma el idioma de conversation.languageDetected (fallback: guest.preferredLanguage → 'es').
- * 6. Envía el mensaje en el idioma correcto según el estado (in_progress | resolved).
- * 7. Marca notifyGuestPending=false para no reenviar en el siguiente ciclo.
+ * 6. Envía el mensaje según notifyGuestStatus (assigned | in_progress | resolved).
+ *    notifyGuestStatus captura el estado exacto que disparó la notificación,
+ *    evitando enviar el mensaje equivocado si el ticket cambió de estado otra vez.
+ * 7. Si el estado era 'resolved' y bot_csat_tickets_enabled, crea csat_surveys pending
+ *    para que el csat.worker envíe el survey en el siguiente ciclo.
+ * 8. Marca notifyGuestPending=false para no reenviar en el siguiente ciclo.
  */
 export async function runTicketNotifyWorker(): Promise<void> {
   let pending: TicketDto[];
@@ -40,11 +50,11 @@ export async function runTicketNotifyWorker(): Promise<void> {
 
 async function processTicketNotification(ticket: TicketDto): Promise<void> {
   try {
-    const enabled = await featureFlags.isEnabled(
+    const ticketsEnabled = await featureFlags.isEnabled(
       ticket.propertyId,
       FeatureFlagKeys.BOT_TICKETS,
     );
-    if (!enabled) {
+    if (!ticketsEnabled) {
       console.log('[ticket-notify-worker] feature_disabled_skip', {
         ticketId: ticket.id,
         flag: FeatureFlagKeys.BOT_TICKETS,
@@ -74,7 +84,11 @@ async function processTicketNotification(ticket: TicketDto): Promise<void> {
     }
 
     const lang = resolveLanguage(conversation?.languageDetected ?? guest.preferredLanguage);
-    const message = buildMessage(ticket, lang);
+
+    // Usar notifyGuestStatus (estado que disparó la notificación) en lugar de
+    // ticket.status, que puede haber cambiado entre que se marcó el flag y ahora.
+    const statusToNotify = ticket.notifyGuestStatus ?? ticket.status;
+    const message = buildMessage(ticket, statusToNotify, lang);
 
     if (!message) {
       // Estado no notificable — limpiar el flag
@@ -84,11 +98,32 @@ async function processTicketNotification(ticket: TicketDto): Promise<void> {
 
     const channel = resolveChannel(guest, property);
     await channel.send(message);
+
+    // Si el ticket fue resuelto y el hotel tiene CSAT de tickets habilitado,
+    // crear el survey pending para que csat.worker lo envíe en el próximo ciclo.
+    if (statusToNotify === 'resolved') {
+      const csatEnabled = await featureFlags.isEnabled(
+        ticket.propertyId,
+        FeatureFlagKeys.BOT_CSAT_TICKETS,
+      );
+      if (csatEnabled) {
+        await csatSurveys.create({
+          ticketId: ticket.id,
+          propertyId: ticket.propertyId,
+          organizationId: ticket.organizationId,
+          guestId: ticket.guestId,
+          conversationId: conversation?.id ?? null,
+          surveyTrigger: 'ticket',
+        });
+        console.log('[ticket-notify-worker] csat_survey_created', { ticketId: ticket.id });
+      }
+    }
+
     await tickets.markNotified(ticket.id);
 
     console.log('[ticket-notify-worker] notification_sent', {
       ticketId: ticket.id,
-      status: ticket.status,
+      notifyGuestStatus: statusToNotify,
       lang,
       guest: `${guest.phonePrefix}${guest.phoneNumber}`,
     });
@@ -97,8 +132,14 @@ async function processTicketNotification(ticket: TicketDto): Promise<void> {
   }
 }
 
-function buildMessage(ticket: TicketDto, lang: ReturnType<typeof resolveLanguage>): string | null {
-  switch (ticket.status) {
+function buildMessage(
+  ticket: TicketDto,
+  status: string,
+  lang: ReturnType<typeof resolveLanguage>,
+): string | null {
+  switch (status) {
+    case 'assigned':
+      return ticketAssigned(ticket, lang);
     case 'in_progress':
       return ticketInProgress(ticket, lang);
     case 'resolved':

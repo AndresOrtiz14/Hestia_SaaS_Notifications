@@ -14,6 +14,25 @@ import { getNestjsClient } from '../nestjs.client';
 import { CsatSurveyEndpoints } from './csat-survey.endpoints';
 import { CsatSurveyDto } from './csat-survey.schemas';
 
+// ── Create ─────────────────────────────────────────────────────────────────────
+
+export async function create(payload: {
+  ticketId: string | null;
+  propertyId: string;
+  organizationId: string;
+  guestId: string;
+  conversationId: string | null;
+  surveyTrigger: 'ticket' | 'faq';
+}): Promise<CsatSurveyDto | null> {
+  const client = getNestjsClient();
+  const data = await client._post<CsatSurveyDto>(CsatSurveyEndpoints.BASE, payload);
+  if (!data) {
+    console.error('[csat-survey-service] create_failed', { ticketId: payload.ticketId });
+    return null;
+  }
+  return data;
+}
+
 // ── Read ───────────────────────────────────────────────────────────────────────
 
 export async function getPending(): Promise<CsatSurveyDto[]> {
