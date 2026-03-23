@@ -1,0 +1,23 @@
+/** DTOs for the Tickets domain (mirrors NestJS TicketResponseDto). */
+export interface TicketDto {
+  id: string;
+  organizationId: string;
+  propertyId: string;
+  title: string;
+  description: string;
+  areaCode: string;
+  areaId: string | null;
+  ticketType: string | null;
+  priority: string;
+  status: string;
+  channel: string;
+  guestId: string | null;
+  createdByUserId: string | null;
+  roomNumber: string | null;
+  locationDescription: string | null;
+  assignedToUserId: string | null;
+  requiresApproval: boolean;
+  notifyGuestPending: boolean;
+  createdAt: string;
+  dueAt: string | null;
+}
