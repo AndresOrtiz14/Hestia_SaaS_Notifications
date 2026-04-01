@@ -12,7 +12,9 @@ export interface PropertyDto {
   city: string | null;
   state: string | null;
   country: string | null;
-  timezone: string;
+  timezone:          string;
+  workingHoursStart: string;   // "HH:MM", ej: "07:00"
+  workingHoursEnd:   string;   // "HH:MM", ej: "23:00"
   language: string;
   phonePrefix: string | null;
   phoneNumber: string | null;

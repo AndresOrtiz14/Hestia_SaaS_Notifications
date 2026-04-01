@@ -17,7 +17,7 @@ import {
 /**
  * Ejecuta un ciclo de polling:
  * 1. Obtiene tickets con notifyGuestPending=true del backend.
- * 2. Verifica bot_tickets_enabled para la propiedad.
+ * 2. Verifica notification_ticket_status_guest_enabled para la propiedad.
  *    Si está desactivado, omite el envío sin modificar el estado.
  * 3. Solo procesa tickets que tengan guestId (sin huésped no hay a quién notificar).
  * 4. Obtiene en paralelo: guest, property y conversación asociada al ticket.
@@ -52,12 +52,12 @@ async function processTicketNotification(ticket: TicketDto): Promise<void> {
   try {
     const ticketsEnabled = await featureFlags.isEnabled(
       ticket.propertyId,
-      FeatureFlagKeys.BOT_TICKETS,
+      FeatureFlagKeys.NOTIFICATION_TICKET_STATUS_GUEST,
     );
     if (!ticketsEnabled) {
       console.log('[ticket-notify-worker] feature_disabled_skip', {
         ticketId: ticket.id,
-        flag: FeatureFlagKeys.BOT_TICKETS,
+        flag: FeatureFlagKeys.NOTIFICATION_TICKET_STATUS_GUEST,
       });
       return;
     }
