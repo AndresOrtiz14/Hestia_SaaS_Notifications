@@ -20,11 +20,15 @@ export interface PropertyDto {
   phoneNumber: string | null;
   email: string | null;
   website: string | null;
+  // Bot de huéspedes (canal de atención al cliente)
   whatsappPhonePrefix: string | null;
   whatsappPhoneNumber: string | null;
   whatsappPhoneNumberId: string | null;
   whatsappBusinessAccountId: string | null;
   whatsappCloudToken: string | null;
+  // Bot de personal interno (staff y supervisores)
+  staffWhatsappPhoneNumberId: string | null;
+  staffWhatsappCloudToken: string | null;
   telegramBotToken: string | null;
   webWidgetEnabled: boolean;
   webWidgetDomain: string | null;

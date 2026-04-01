@@ -56,21 +56,31 @@ async function processEntry(entry: NotificationQueueEntryDto): Promise<void> {
       }
     }
 
-    // ── 2. Obtener property (credenciales WhatsApp) ──────────────────────────
+    // ── 2. Obtener property y seleccionar credenciales WhatsApp ─────────────
+    // Guests  → bot de huéspedes  (whatsappPhoneNumberId)
+    // Staff/supervisor → bot de personal interno (staffWhatsappPhoneNumberId)
     const property = await properties.getById(entry.propertyId);
     if (!property) {
       await queue.markFailed(entry.id, 'property_not_found');
       return;
     }
-    if (!property.whatsappPhoneNumberId || !property.whatsappCloudToken) {
-      await queue.markFailed(entry.id, 'whatsapp_not_configured');
+
+    const isInternalRecipient = entry.recipientType === 'staff' || entry.recipientType === 'supervisor';
+
+    const phoneNumberId = isInternalRecipient
+      ? property.staffWhatsappPhoneNumberId
+      : property.whatsappPhoneNumberId;
+    const cloudToken = isInternalRecipient
+      ? property.staffWhatsappCloudToken
+      : property.whatsappCloudToken;
+
+    if (!phoneNumberId || !cloudToken) {
+      const reason = isInternalRecipient ? 'staff_whatsapp_not_configured' : 'whatsapp_not_configured';
+      await queue.markFailed(entry.id, reason);
       return;
     }
 
-    const creds = {
-      phoneNumberId: property.whatsappPhoneNumberId,
-      cloudToken:    property.whatsappCloudToken,
-    };
+    const creds = { phoneNumberId, cloudToken };
 
     // ── 3. Obtener teléfono del destinatario y construir mensaje ─────────────
     let to:      string;
