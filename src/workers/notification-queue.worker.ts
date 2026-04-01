@@ -68,14 +68,14 @@ async function processEntry(entry: NotificationQueueEntryDto): Promise<void> {
     const isInternalRecipient = entry.recipientType === 'staff' || entry.recipientType === 'supervisor';
 
     const phoneNumberId = isInternalRecipient
-      ? property.staffWhatsappPhoneNumberId
+      ? property.whatsappWorkersPhoneNumberId
       : property.whatsappPhoneNumberId;
     const cloudToken = isInternalRecipient
-      ? property.staffWhatsappCloudToken
+      ? property.whatsappWorkersCloudToken
       : property.whatsappCloudToken;
 
     if (!phoneNumberId || !cloudToken) {
-      const reason = isInternalRecipient ? 'staff_whatsapp_not_configured' : 'whatsapp_not_configured';
+      const reason = isInternalRecipient ? 'whatsapp_workers_not_configured' : 'whatsapp_not_configured';
       await queue.markFailed(entry.id, reason);
       return;
     }

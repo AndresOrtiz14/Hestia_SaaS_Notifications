@@ -27,8 +27,11 @@ export interface PropertyDto {
   whatsappBusinessAccountId: string | null;
   whatsappCloudToken: string | null;
   // Bot de personal interno (staff y supervisores)
-  staffWhatsappPhoneNumberId: string | null;
-  staffWhatsappCloudToken: string | null;
+  whatsappWorkersPhonePrefix: string | null;
+  whatsappWorkersPhoneNumber: string | null;
+  whatsappWorkersPhoneNumberId: string | null;
+  whatsappWorkersBusinessAccountId: string | null;
+  whatsappWorkersCloudToken: string | null;
   telegramBotToken: string | null;
   webWidgetEnabled: boolean;
   webWidgetDomain: string | null;

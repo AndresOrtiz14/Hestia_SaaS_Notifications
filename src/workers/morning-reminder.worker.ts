@@ -49,15 +49,15 @@ export async function runMorningReminderWorker(): Promise<void> {
       _sentToday.add(key);
 
       const property = await properties.getById(prop.id);
-      // El morning reminder va al personal interno → usar bot de staff
-      if (!property?.staffWhatsappPhoneNumberId || !property.staffWhatsappCloudToken) {
-        console.warn('[morning-reminder-worker] staff_whatsapp_not_configured', { propertyId: prop.id });
+      // El morning reminder va al personal interno → usar bot de workers
+      if (!property?.whatsappWorkersPhoneNumberId || !property.whatsappWorkersCloudToken) {
+        console.warn('[morning-reminder-worker] whatsapp_workers_not_configured', { propertyId: prop.id });
         continue;
       }
 
       const creds: WaCredentials = {
-        phoneNumberId: property.staffWhatsappPhoneNumberId,
-        cloudToken:    property.staffWhatsappCloudToken,
+        phoneNumberId: property.whatsappWorkersPhoneNumberId,
+        cloudToken:    property.whatsappWorkersCloudToken,
       };
 
       const [staffList, supervisorList] = await Promise.all([
