@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(xargs ls:*)"
+      "Bash(xargs ls:*)",
+      "Bash(find \"/c/Users/ASUS/Documents/PROGRAMMING PROJECTS/WORK PROJECTS/HESTIA/Hestia SaaS/notification-service/dist\" -type f \\\\\\( -name \"*.js\" \\\\\\) -exec grep -l \"NOTIFICATION_TICKET_ASSIGNED_STAFF\\\\|NOTIFICATION_TICKET_REASSIGNED_STAFF\\\\|NOTIFICATION_TICKET_REASSIGNED_SUPERVISOR\\\\|NOTIFICATION_TICKET_RESOLVED_SUPERVISOR\" {} \\\\;)"
     ]
   }
 }

@@ -19,7 +19,6 @@ export const config = {
     port: Number.parseInt(process.env.PORT ?? '4000', 10),
   },
   whatsapp: {
-    verifyToken:        required('WHATSAPP_VERIFY_TOKEN'),
-    verifyTokenWorkers: required('WHATSAPP_VERIFY_TOKEN_WORKERS'),
+    verifyToken: required('WHATSAPP_VERIFY_TOKEN'),
   },
 } as const;

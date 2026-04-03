@@ -18,10 +18,6 @@ export const FeatureFlagKeys = {
 
   // ── Notificaciones al personal interno ────────────────────────────────────
   NOTIFICATION_TICKET_CREATED_FROM_GUEST_TO_SUPERVISOR: 'notification_ticket_created_from_guest_to_supervisor_enabled',
-  NOTIFICATION_TICKET_ASSIGNED_STAFF:               'notification_ticket_assigned_staff_enabled',
-  NOTIFICATION_TICKET_REASSIGNED_STAFF:             'notification_ticket_reassigned_staff_enabled',
-  NOTIFICATION_TICKET_REASSIGNED_SUPERVISOR:        'notification_ticket_reassigned_supervisor_enabled',
-  NOTIFICATION_TICKET_RESOLVED_SUPERVISOR:          'notification_ticket_resolved_supervisor_enabled',
   NOTIFICATION_MORNING_REMINDER:                    'notification_morning_reminder_enabled',
 
   // ── Campañas y broadcast ──────────────────────────────────────────────────

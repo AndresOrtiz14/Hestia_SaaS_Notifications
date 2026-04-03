@@ -7,7 +7,6 @@ import { getFlagForEntry } from '../services/notification-queue/flag-map';
 import { NotificationQueueEntryDto } from '../services/notification-queue/notification-queue.schemas';
 import { resolveLanguage } from '../messages/ticket.messages';
 import * as supervisorMsg from '../messages/supervisor.messages';
-import * as staffMsg      from '../messages/staff.messages';
 import { buildWaNumber, sendWhatsAppMessage } from '../whatsapp/whatsapp.client';
 
 /**
@@ -41,7 +40,7 @@ export async function runNotificationQueueWorker(): Promise<void> {
 async function processEntry(entry: NotificationQueueEntryDto): Promise<void> {
   try {
     // ── 1. Verificar feature flag ────────────────────────────────────────────
-    const flagKey = getFlagForEntry(entry.type, entry.recipientType);
+    const flagKey = getFlagForEntry(entry.type);
     if (flagKey) {
       const enabled = await featureFlags.isEnabled(entry.propertyId, flagKey);
       if (!enabled) {
@@ -157,59 +156,6 @@ async function buildInternalMessage(
         },
         lang,
       );
-
-    case 'ticket.assigned':
-      return staffMsg.ticketAssigned(
-        {
-          ticketTitle: String(p.ticketTitle ?? ''),
-          areaCode:    String(p.areaCode    ?? ''),
-          roomNumber:  (p.roomNumber as string | null) ?? null,
-        },
-        lang,
-      );
-
-    case 'ticket.reassigned': {
-      if (entry.recipientType === 'staff') {
-        return staffMsg.ticketReassigned(
-          {
-            ticketTitle: String(p.ticketTitle ?? ''),
-            areaCode:    String(p.areaCode    ?? ''),
-            roomNumber:  (p.roomNumber as string | null) ?? null,
-          },
-          lang,
-        );
-      }
-      // supervisor — resolver nombres de staff
-      const [newMember, prevMember] = await Promise.all([
-        p.newStaffId      ? staff.getById(String(p.newStaffId))      : Promise.resolve(null),
-        p.previousStaffId ? staff.getById(String(p.previousStaffId)) : Promise.resolve(null),
-      ]);
-      return supervisorMsg.ticketReassigned(
-        {
-          ticketTitle:       String(p.ticketTitle ?? ''),
-          areaCode:          String(p.areaCode    ?? ''),
-          roomNumber:        (p.roomNumber as string | null) ?? null,
-          newStaffName:      newMember?.name  ?? null,
-          previousStaffName: prevMember?.name ?? null,
-        },
-        lang,
-      );
-    }
-
-    case 'ticket.completed': {
-      const resolvedBy = p.resolvedByUserId
-        ? await staff.getById(String(p.resolvedByUserId))
-        : null;
-      return supervisorMsg.ticketCompleted(
-        {
-          ticketTitle:    String(p.ticketTitle ?? ''),
-          areaCode:       String(p.areaCode    ?? ''),
-          roomNumber:     (p.roomNumber as string | null) ?? null,
-          resolvedByName: resolvedBy?.name ?? null,
-        },
-        lang,
-      );
-    }
 
     default:
       throw new Error(`Unknown notification type: ${entry.type}`);
