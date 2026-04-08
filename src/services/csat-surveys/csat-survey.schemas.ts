@@ -1,7 +1,7 @@
 /** DTOs for the CSAT Surveys domain (mirrors NestJS CsatSurveyResponseDto). */
 export interface CsatSurveyDto {
   id: string;
-  conversationId: string;
+  conversationId: string | null;
   ticketId: string | null;
   propertyId: string;
   organizationId: string;
