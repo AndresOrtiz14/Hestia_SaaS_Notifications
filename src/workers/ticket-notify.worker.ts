@@ -34,12 +34,16 @@ export async function runTicketNotifyWorker(): Promise<void> {
 
   try {
     pending = await tickets.getNotifyGuestPending();
+    console.log('[ticket-notify-worker] fetch_result', { count: pending.length, ids: pending.map(t => t.id) });
   } catch (err) {
     console.error('[ticket-notify-worker] Error obteniendo tickets pendientes:', err);
     return;
   }
 
-  if (pending.length === 0) return;
+  if (pending.length === 0) {
+    console.log('[ticket-notify-worker] no_pending_tickets');
+    return;
+  }
 
   console.log(`[ticket-notify-worker] ${pending.length} ticket(s) con notificación pendiente`);
 
@@ -50,10 +54,13 @@ export async function runTicketNotifyWorker(): Promise<void> {
 
 async function processTicketNotification(ticket: TicketDto): Promise<void> {
   try {
+    console.log('[ticket-notify-worker] processing_ticket', { ticketId: ticket.id, status: ticket.status, notifyGuestStatus: ticket.notifyGuestStatus, guestId: ticket.guestId });
+
     const ticketsEnabled = await featureFlags.isEnabled(
       ticket.propertyId,
       FeatureFlagKeys.NOTIFICATION_TICKET_STATUS_GUEST,
     );
+    console.log('[ticket-notify-worker] flag_check', { ticketId: ticket.id, flag: FeatureFlagKeys.NOTIFICATION_TICKET_STATUS_GUEST, enabled: ticketsEnabled });
     if (!ticketsEnabled) {
       console.log('[ticket-notify-worker] feature_disabled_skip', {
         ticketId: ticket.id,
@@ -97,7 +104,9 @@ async function processTicketNotification(ticket: TicketDto): Promise<void> {
     }
 
     const channel = resolveChannel(guest, property);
+    console.log('[ticket-notify-worker] sending_message', { ticketId: ticket.id, message });
     await channel.send(message);
+    console.log('[ticket-notify-worker] message_sent', { ticketId: ticket.id });
 
     // Si el ticket fue resuelto y el hotel tiene CSAT de tickets habilitado,
     // crear el survey pending para que csat.worker lo envíe en el próximo ciclo.
@@ -106,8 +115,9 @@ async function processTicketNotification(ticket: TicketDto): Promise<void> {
         ticket.propertyId,
         FeatureFlagKeys.BOT_CSAT_TICKETS,
       );
+      console.log('[ticket-notify-worker] csat_flag_check', { ticketId: ticket.id, enabled: csatEnabled });
       if (csatEnabled) {
-        await csatSurveys.create({
+        const survey = await csatSurveys.create({
           ticketId: ticket.id,
           propertyId: ticket.propertyId,
           organizationId: ticket.organizationId,
@@ -115,10 +125,11 @@ async function processTicketNotification(ticket: TicketDto): Promise<void> {
           conversationId: conversation?.id ?? null,
           surveyTrigger: 'ticket',
         });
-        console.log('[ticket-notify-worker] csat_survey_created', { ticketId: ticket.id });
+        console.log('[ticket-notify-worker] csat_survey_created', { ticketId: ticket.id, surveyId: survey?.id ?? null, success: !!survey });
       }
     }
 
+    console.log('[ticket-notify-worker] marking_notified', { ticketId: ticket.id });
     await tickets.markNotified(ticket.id);
 
     console.log('[ticket-notify-worker] notification_sent', {

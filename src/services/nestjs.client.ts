@@ -79,12 +79,14 @@ class NestjsClient {
             method,
             path,
             status: response.status,
+            body: JSON.stringify(response.data).slice(0, 300),
           });
           return null;
         }
 
         // Unwrap NestJS standard envelope { success, data, ... }
         const body = response.data;
+        console.log('[nestjs-client] raw_response', { method, path, status: response.status, body: JSON.stringify(body).slice(0, 500) });
         if (body !== null && typeof body === 'object' && 'data' in body) {
           return (body as { data: T }).data;
         }
