@@ -149,11 +149,12 @@ async function buildInternalMessage(
     case 'ticket.created.fromguest':
       return supervisorMsg.ticketCreatedFromGuest(
         {
-          ticketTitle:  String(p.ticketTitle  ?? ''),
-          ticketIdCode: (p.ticketIdCode as number | null) ?? null,
-          areaCode:     String(p.areaCode     ?? ''),
-          roomNumber:   (p.roomNumber  as string | null) ?? null,
-          guestName:    (p.guestName   as string | null) ?? null,
+          ticketTitle:       String(p.ticketTitle       ?? ''),
+          ticketDescription: (p.ticketDescription as string | null) ?? null,
+          ticketIdCode:      (p.ticketIdCode      as number | null) ?? null,
+          areaCode:          String(p.areaCode          ?? ''),
+          roomNumber:        (p.roomNumber         as string | null) ?? null,
+          guestName:         (p.guestName          as string | null) ?? null,
         },
         lang,
       );

@@ -33,11 +33,12 @@ function roomPhrase(roomNumber: string | null, lang: SupportedLanguage): string 
 // ── Mensajes ──────────────────────────────────────────────────────────────────
 
 type CreatedFromGuestPayload = {
-  ticketTitle:   string;
-  ticketIdCode?: number | null;
-  areaCode:      string;
-  roomNumber:    string | null;
-  guestName:     string | null;
+  ticketTitle:       string;
+  ticketDescription: string | null;
+  ticketIdCode?:     number | null;
+  areaCode:          string;
+  roomNumber:        string | null;
+  guestName:         string | null;
 };
 
 export function ticketCreatedFromGuest(
@@ -56,10 +57,12 @@ export function ticketCreatedFromGuest(
     en: `New ticket${idTag} · ${abbr}`,
   };
 
+  const desc = payload.ticketDescription ?? payload.ticketTitle;
+
   const messages: Record<SupportedLanguage, string> = {
-    es: `🔔 *${header.es}*\n\n*${payload.ticketTitle}*\nÁrea: ${area}${room}\nCreado por: ${guest}`,
-    pt: `🔔 *${header.pt}*\n\n*${payload.ticketTitle}*\nÁrea: ${area}${room}\nCriado por: ${guest}`,
-    en: `🔔 *${header.en}*\n\n*${payload.ticketTitle}*\nArea: ${area}${room}\nCreated by: ${guest}`,
+    es: `🔔 *${header.es}*\n${desc}\nÁrea: ${area}${room}\nCreado por: ${guest}`,
+    pt: `🔔 *${header.pt}*\n${desc}\nÁrea: ${area}${room}\nCriado por: ${guest}`,
+    en: `🔔 *${header.en}*\n${desc}\nArea: ${area}${room}\nCreated by: ${guest}`,
   };
   return messages[lang];
 }
