@@ -2,6 +2,7 @@ import * as csatSurveys from '../services/csat-surveys/csat-survey.service';
 import { CsatSurveyDto } from '../services/csat-surveys/csat-survey.schemas';
 import * as guests from '../services/guests/guest.service';
 import * as properties from '../services/properties/property.service';
+import * as tickets from '../services/tickets/ticket.service';
 import * as featureFlags from '../services/feature-flags/feature-flag.service';
 import { FeatureFlagKeys } from '../services/feature-flags/feature-flag.keys';
 import { resolveChannel } from '../channels/channel.resolver';
@@ -89,9 +90,16 @@ async function processPendingSurvey(survey: CsatSurveyDto): Promise<void> {
 
     const channel = resolveChannel(guest, property);
 
+    let ticketIdCode: number | string | null = null;
+    if (survey.surveyTrigger === 'ticket' && survey.ticketId) {
+      const ticket = await tickets.getById(survey.ticketId);
+      ticketIdCode = ticket?.idCode ?? null;
+    }
+
+    const ticketLabel = ticketIdCode ?? survey.ticketId ?? survey.id;
     const question =
       survey.surveyTrigger === 'ticket'
-        ? msg.ticketQ1(survey.ticketId ?? survey.id)
+        ? msg.ticketQ1(ticketLabel)
         : msg.faqQ1();
 
     console.log('[csat-worker] sending_q1', { surveyId: survey.id, question });

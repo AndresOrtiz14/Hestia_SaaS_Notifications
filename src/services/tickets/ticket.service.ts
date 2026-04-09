@@ -11,6 +11,11 @@ import { TicketDto } from './ticket.schemas';
 
 // ── Read ───────────────────────────────────────────────────────────────────────
 
+export async function getById(ticketId: string): Promise<TicketDto | null> {
+  const client = getNestjsClient();
+  return client._get<TicketDto>(TicketEndpoints.BY_ID.replace('{id}', ticketId));
+}
+
 export async function getNotifyGuestPending(): Promise<TicketDto[]> {
   const client = getNestjsClient();
   const data = await client._get<TicketDto[]>(TicketEndpoints.NOTIFY_GUEST_PENDING);

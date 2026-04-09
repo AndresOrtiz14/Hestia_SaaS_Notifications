@@ -41,13 +41,6 @@ export async function getPending(): Promise<CsatSurveyDto[]> {
   return data ?? [];
 }
 
-export async function getActiveForGuest(guestId: string): Promise<CsatSurveyDto | null> {
-  const client = getNestjsClient();
-  return client._get<CsatSurveyDto>(
-    CsatSurveyEndpoints.ACTIVE_FOR_GUEST.replace('{guest_id}', guestId),
-  );
-}
-
 // ── Lifecycle ──────────────────────────────────────────────────────────────────
 
 export async function markSent(surveyId: string): Promise<CsatSurveyDto | null> {

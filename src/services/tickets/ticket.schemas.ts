@@ -16,10 +16,12 @@ export interface TicketDto {
   roomNumber: string | null;
   locationDescription: string | null;
   assignedToUserId: string | null;
+  idCode: number;
   requiresApproval: boolean;
   notifyGuestPending: boolean;
   /** Estado que disparó la notificación (guardado en el backend al momento del cambio). */
   notifyGuestStatus: string | null;
   createdAt: string;
   dueAt: string | null;
+  photoUrl: string | null;
 }

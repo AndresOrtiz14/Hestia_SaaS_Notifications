@@ -1,8 +1,8 @@
 // ── Mensajes CSAT — Ticket ───────────────────────────────────────────────────────
 
-export function ticketQ1(ticketId: string): string {
+export function ticketQ1(ticketIdCode: number | string): string {
   return (
-    `Nos gustaría conocer tu opinión sobre la atención recibida en tu ticket #${ticketId}.\n\n` +
+    `Nos gustaría conocer tu opinión sobre la atención recibida en tu ticket #${ticketIdCode}.\n\n` +
     `¿Cómo calificarías tu experiencia?\n\n` +
     `Responde con un número del 1 al 5:\n` +
     `1️⃣ - Muy mala\n` +
