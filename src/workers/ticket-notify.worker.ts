@@ -56,19 +56,6 @@ async function processTicketNotification(ticket: TicketDto): Promise<void> {
   try {
     console.log('[ticket-notify-worker] processing_ticket', { ticketId: ticket.id, status: ticket.status, notifyGuestStatus: ticket.notifyGuestStatus, guestId: ticket.guestId });
 
-    const ticketsEnabled = await featureFlags.isEnabled(
-      ticket.propertyId,
-      FeatureFlagKeys.NOTIFICATION_TICKET_STATUS_GUEST,
-    );
-    console.log('[ticket-notify-worker] flag_check', { ticketId: ticket.id, flag: FeatureFlagKeys.NOTIFICATION_TICKET_STATUS_GUEST, enabled: ticketsEnabled });
-    if (!ticketsEnabled) {
-      console.log('[ticket-notify-worker] feature_disabled_skip', {
-        ticketId: ticket.id,
-        flag: FeatureFlagKeys.NOTIFICATION_TICKET_STATUS_GUEST,
-      });
-      return;
-    }
-
     if (!ticket.guestId) {
       // Sin huésped no hay canal — limpiar el flag igualmente
       await tickets.markNotified(ticket.id);
@@ -90,33 +77,53 @@ async function processTicketNotification(ticket: TicketDto): Promise<void> {
       return;
     }
 
-    const lang = resolveLanguage(conversation?.languageDetected ?? guest.preferredLanguage);
-
-    // Usar notifyGuestStatus (estado que disparó la notificación) en lugar de
-    // ticket.status, que puede haber cambiado entre que se marcó el flag y ahora.
     const statusToNotify = ticket.notifyGuestStatus ?? ticket.status;
-    const message = buildMessage(ticket, statusToNotify, lang);
 
-    if (!message) {
-      // Estado no notificable — limpiar el flag
-      await tickets.markNotified(ticket.id);
-      return;
+    // Enviar notificación de estado solo si la flag está activa
+    const ticketsEnabled = await featureFlags.isEnabled(
+      ticket.propertyId,
+      FeatureFlagKeys.NOTIFICATION_TICKET_STATUS_GUEST,
+    );
+    console.log('[ticket-notify-worker] flag_check', { ticketId: ticket.id, flag: FeatureFlagKeys.NOTIFICATION_TICKET_STATUS_GUEST, enabled: ticketsEnabled });
+
+    if (ticketsEnabled) {
+      const lang = resolveLanguage(conversation?.languageDetected ?? guest.preferredLanguage);
+      const message = buildMessage(ticket, statusToNotify, lang);
+
+      if (message) {
+        const channel = resolveChannel(guest, property);
+        console.log('[ticket-notify-worker] sending_message', { ticketId: ticket.id, message });
+        await channel.send(message);
+        console.log('[ticket-notify-worker] message_sent', { ticketId: ticket.id });
+      }
+    } else {
+      console.log('[ticket-notify-worker] status_notification_skipped', {
+        ticketId: ticket.id,
+        flag: FeatureFlagKeys.NOTIFICATION_TICKET_STATUS_GUEST,
+      });
     }
 
-    const channel = resolveChannel(guest, property);
-    console.log('[ticket-notify-worker] sending_message', { ticketId: ticket.id, message });
-    await channel.send(message);
-    console.log('[ticket-notify-worker] message_sent', { ticketId: ticket.id });
+    // Crear CSAT independientemente de si se envió la notificación de estado.
+    // bot_csat_tickets_enabled controla si se envía la encuesta.
+    console.log('[ticket-notify-worker] csat_decision', {
+      ticketId: ticket.id,
+      statusToNotify,
+      willAttemptCsat: statusToNotify === 'resolved',
+    });
 
-    // Si el ticket fue resuelto y el hotel tiene CSAT de tickets habilitado,
-    // crear el survey pending para que csat.worker lo envíe en el próximo ciclo.
     if (statusToNotify === 'resolved') {
       const csatEnabled = await featureFlags.isEnabled(
         ticket.propertyId,
         FeatureFlagKeys.BOT_CSAT_TICKETS,
       );
-      console.log('[ticket-notify-worker] csat_flag_check', { ticketId: ticket.id, enabled: csatEnabled });
+      console.log('[ticket-notify-worker] csat_flag_check', { ticketId: ticket.id, flag: FeatureFlagKeys.BOT_CSAT_TICKETS, enabled: csatEnabled });
+
       if (csatEnabled) {
+        console.log('[ticket-notify-worker] csat_creating_survey', {
+          ticketId: ticket.id,
+          guestId: ticket.guestId,
+          conversationId: conversation?.id ?? null,
+        });
         const survey = await csatSurveys.create({
           ticketId: ticket.id,
           propertyId: ticket.propertyId,
@@ -125,8 +132,22 @@ async function processTicketNotification(ticket: TicketDto): Promise<void> {
           conversationId: conversation?.id ?? null,
           surveyTrigger: 'ticket',
         });
-        console.log('[ticket-notify-worker] csat_survey_created', { ticketId: ticket.id, surveyId: survey?.id ?? null, success: !!survey });
+        console.log('[ticket-notify-worker] csat_survey_created', {
+          ticketId: ticket.id,
+          surveyId: survey?.id ?? null,
+          success: !!survey,
+        });
+      } else {
+        console.log('[ticket-notify-worker] csat_skipped_flag_disabled', {
+          ticketId: ticket.id,
+          flag: FeatureFlagKeys.BOT_CSAT_TICKETS,
+        });
       }
+    } else {
+      console.log('[ticket-notify-worker] csat_skipped_not_resolved', {
+        ticketId: ticket.id,
+        statusToNotify,
+      });
     }
 
     console.log('[ticket-notify-worker] marking_notified', { ticketId: ticket.id });
@@ -135,7 +156,6 @@ async function processTicketNotification(ticket: TicketDto): Promise<void> {
     console.log('[ticket-notify-worker] notification_sent', {
       ticketId: ticket.id,
       notifyGuestStatus: statusToNotify,
-      lang,
       guest: `${guest.phonePrefix}${guest.phoneNumber}`,
     });
   } catch (err) {

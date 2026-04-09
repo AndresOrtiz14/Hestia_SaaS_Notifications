@@ -26,7 +26,10 @@ export async function runCsatWorker(): Promise<void> {
     return;
   }
 
-  if (surveys.length === 0) return;
+  if (surveys.length === 0) {
+    console.log('[csat-worker] no_pending_surveys');
+    return;
+  }
 
   console.log(`[csat-worker] ${surveys.length} encuesta(s) pendiente(s) de envío`);
 
@@ -42,7 +45,18 @@ async function processPendingSurvey(survey: CsatSurveyDto): Promise<void> {
         ? FeatureFlagKeys.BOT_CSAT_FAQS
         : FeatureFlagKeys.BOT_CSAT_TICKETS;
 
+    console.log('[csat-worker] processing_survey', {
+      surveyId: survey.id,
+      trigger: survey.surveyTrigger,
+      status: survey.status,
+      guestId: survey.guestId,
+      propertyId: survey.propertyId,
+      ticketId: survey.ticketId,
+    });
+
     const enabled = await featureFlags.isEnabled(survey.propertyId, flagKey);
+    console.log('[csat-worker] flag_check', { surveyId: survey.id, flag: flagKey, enabled });
+
     if (!enabled) {
       console.log('[csat-worker] feature_disabled_skip', {
         surveyId: survey.id,
@@ -56,6 +70,13 @@ async function processPendingSurvey(survey: CsatSurveyDto): Promise<void> {
       guests.getById(survey.guestId),
       properties.getById(survey.propertyId),
     ]);
+
+    console.log('[csat-worker] resources_fetched', {
+      surveyId: survey.id,
+      guestFound: !!guest,
+      propertyFound: !!property,
+      guestPhone: guest ? `${guest.phonePrefix}${guest.phoneNumber}` : null,
+    });
 
     if (!guest || !property) {
       console.error('[csat-worker] guest_or_property_not_found', {
@@ -73,6 +94,7 @@ async function processPendingSurvey(survey: CsatSurveyDto): Promise<void> {
         ? msg.ticketQ1(survey.ticketId ?? survey.id)
         : msg.faqQ1();
 
+    console.log('[csat-worker] sending_q1', { surveyId: survey.id, question });
     await channel.send(question);
     await csatSurveys.markSent(survey.id);
 
