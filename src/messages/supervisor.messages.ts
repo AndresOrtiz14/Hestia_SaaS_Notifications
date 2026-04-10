@@ -60,9 +60,9 @@ export function ticketCreatedFromGuest(
   const desc = payload.ticketDescription ?? payload.ticketTitle;
 
   const messages: Record<SupportedLanguage, string> = {
-    es: `🔔 *${header.es}*\n${desc}\nÁrea: ${area}${room}\nCreado por: ${guest}`,
-    pt: `🔔 *${header.pt}*\n${desc}\nÁrea: ${area}${room}\nCriado por: ${guest}`,
-    en: `🔔 *${header.en}*\n${desc}\nArea: ${area}${room}\nCreated by: ${guest}`,
+    es: `🔔 *${header.es}*\n📋 ${desc}\n🏠 Área: ${area}${room}\n👤 Creado por: ${guest}`,
+    pt: `🔔 *${header.pt}*\n📋 ${desc}\n🏠 Área: ${area}${room}\n👤 Criado por: ${guest}`,
+    en: `🔔 *${header.en}*\n📋 ${desc}\n🏠 Area: ${area}${room}\n👤 Created by: ${guest}`,
   };
   return messages[lang];
 }
