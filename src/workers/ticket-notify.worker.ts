@@ -8,7 +8,6 @@ import * as featureFlags from '../services/feature-flags/feature-flag.service';
 import { FeatureFlagKeys } from '../services/feature-flags/feature-flag.keys';
 import { resolveChannel } from '../channels/channel.resolver';
 import {
-  ticketAssigned,
   ticketInProgress,
   ticketResolved,
   resolveLanguage,
@@ -169,8 +168,6 @@ function buildMessage(
   lang: ReturnType<typeof resolveLanguage>,
 ): string | null {
   switch (status) {
-    case 'assigned':
-      return ticketAssigned(ticket, lang);
     case 'in_progress':
       return ticketInProgress(ticket, lang);
     case 'resolved':

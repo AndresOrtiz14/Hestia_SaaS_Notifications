@@ -40,30 +40,6 @@ function roomPhrase(roomNumber: string | null, lang: SupportedLanguage): string 
 
 type TicketContext = { title: string; areaCode: string; roomNumber: string | null };
 
-export function ticketAssigned(ticket: TicketContext, lang: SupportedLanguage = 'es'): string {
-  const actor = areaActor(ticket.areaCode, lang);
-  const room  = roomPhrase(ticket.roomNumber, lang);
-
-  const messages: Record<SupportedLanguage, string> = {
-    es: (
-      `📋 *Solicitud asignada*\n\n` +
-      `Tu solicitud *"${ticket.title}"*${room} ha sido asignada a ${actor}.\n\n` +
-      `Pronto nos pondremos en contacto contigo.`
-    ),
-    pt: (
-      `📋 *Pedido atribuído*\n\n` +
-      `O seu pedido *"${ticket.title}"*${room} foi atribuído a ${actor}.\n\n` +
-      `Entraremos em contacto consigo brevemente.`
-    ),
-    en: (
-      `📋 *Request assigned*\n\n` +
-      `Your request *"${ticket.title}"*${room} has been assigned to ${actor}.\n\n` +
-      `We'll be in touch with you shortly.`
-    ),
-  };
-
-  return messages[lang];
-}
 
 export function ticketInProgress(ticket: TicketContext, lang: SupportedLanguage = 'es'): string {
   const actor = areaActor(ticket.areaCode, lang);
