@@ -27,7 +27,7 @@ npm install
 
 ---
 
-## Variables de entorno
+## Variables de entornos
 
 Copia el archivo de ejemplo y completa los valores:
 
