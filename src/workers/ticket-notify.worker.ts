@@ -170,6 +170,7 @@ function buildMessage(
   switch (status) {
     case 'in_progress':
       return ticketInProgress(ticket, lang);
+    case 'finished':
     case 'resolved':
       return ticketResolved(ticket, lang);
     default:
