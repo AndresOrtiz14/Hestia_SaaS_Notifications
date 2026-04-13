@@ -27,10 +27,9 @@ export async function getSupervisorsByProperty(
   const client = getNestjsClient();
   const params: Record<string, string | undefined> = {
     propertyId,
-    role: 'supervisor',
     ...(areaCode ? { areaCode } : {}),
   };
-  const data = await client._get<StaffDto[]>(StaffEndpoints.LIST, params);
+  const data = await client._get<StaffDto[]>(StaffEndpoints.SUPERVISORS, params);
   if (!data) {
     console.warn('[staff-service] supervisors_not_found', { propertyId, areaCode });
     return [];
