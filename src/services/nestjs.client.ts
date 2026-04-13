@@ -114,6 +114,10 @@ class NestjsClient {
   async _put<T>(path: string, body?: unknown): Promise<T | null> {
     return this.request<T>('PUT', path, { body });
   }
+
+  async _patch<T>(path: string, body?: unknown): Promise<T | null> {
+    return this.request<T>('PATCH', path, { body });
+  }
 }
 
 // ── Module-level singleton ─────────────────────────────────────────────────────

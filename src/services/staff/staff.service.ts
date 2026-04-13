@@ -20,6 +20,24 @@ function cacheSet(id: string, staff: StaffDto): void {
 
 // ── Service functions ──────────────────────────────────────────────────────────
 
+export async function getSupervisorsByProperty(
+  propertyId: string,
+  areaCode?: string,
+): Promise<StaffDto[]> {
+  const client = getNestjsClient();
+  const params: Record<string, string | undefined> = {
+    propertyId,
+    role: 'supervisor',
+    ...(areaCode ? { areaCode } : {}),
+  };
+  const data = await client._get<StaffDto[]>(StaffEndpoints.LIST, params);
+  if (!data) {
+    console.warn('[staff-service] supervisors_not_found', { propertyId, areaCode });
+    return [];
+  }
+  return data;
+}
+
 export async function getById(staffId: string): Promise<StaffDto | null> {
   const cached = cacheGet(staffId);
   if (cached) return cached;

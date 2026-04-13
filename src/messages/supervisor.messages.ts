@@ -41,6 +41,97 @@ type CreatedFromGuestPayload = {
   guestName:         string | null;
 };
 
+// ── Escalation messages ───────────────────────────────────────────────────────
+
+type EscalationPayload = {
+  ticketIdCode:  number;
+  ticketTitle:   string;
+  areaCode:      string;
+  roomNumber:    string | null;
+  priority:      string;
+};
+
+const PRIORITY_LABEL: Record<string, Record<SupportedLanguage, string>> = {
+  low:      { es: 'baja',     pt: 'baixa',   en: 'low'      },
+  medium:   { es: 'media',    pt: 'média',   en: 'medium'   },
+  high:     { es: 'alta',     pt: 'alta',    en: 'high'     },
+  critical: { es: 'crítica',  pt: 'crítica', en: 'critical' },
+};
+
+function priorityLabel(priority: string, lang: SupportedLanguage): string {
+  return PRIORITY_LABEL[priority]?.[lang] ?? priority;
+}
+
+/**
+ * Alerta a supervisores: ticket abierto sin asignar que superó el timeout.
+ */
+export function ticketEscalationUnassigned(
+  payload: EscalationPayload,
+  lang: SupportedLanguage = 'es',
+): string {
+  const area  = areaName(payload.areaCode, lang);
+  const abbr  = AREA_ABBR[payload.areaCode] ?? payload.areaCode;
+  const room  = roomPhrase(payload.roomNumber, lang);
+  const prio  = priorityLabel(payload.priority, lang);
+
+  const messages: Record<SupportedLanguage, string> = {
+    es: (
+      `⚠️ *Ticket sin asignar · #${payload.ticketIdCode} · ${abbr}*\n` +
+      `📋 ${payload.ticketTitle}${room}\n` +
+      `🏠 Área: ${area} · Prioridad: ${prio}\n\n` +
+      `Este ticket lleva demasiado tiempo sin ser asignado.`
+    ),
+    pt: (
+      `⚠️ *Ticket sem atribuir · #${payload.ticketIdCode} · ${abbr}*\n` +
+      `📋 ${payload.ticketTitle}${room}\n` +
+      `🏠 Área: ${area} · Prioridade: ${prio}\n\n` +
+      `Este ticket está há muito tempo sem ser atribuído.`
+    ),
+    en: (
+      `⚠️ *Unassigned ticket · #${payload.ticketIdCode} · ${abbr}*\n` +
+      `📋 ${payload.ticketTitle}${room}\n` +
+      `🏠 Area: ${area} · Priority: ${prio}\n\n` +
+      `This ticket has been waiting too long to be assigned.`
+    ),
+  };
+  return messages[lang];
+}
+
+/**
+ * Alerta a supervisores y al técnico asignado: ticket asignado sin iniciar que superó el timeout.
+ */
+export function ticketEscalationUnstarted(
+  payload: EscalationPayload,
+  lang: SupportedLanguage = 'es',
+): string {
+  const area  = areaName(payload.areaCode, lang);
+  const abbr  = AREA_ABBR[payload.areaCode] ?? payload.areaCode;
+  const room  = roomPhrase(payload.roomNumber, lang);
+  const prio  = priorityLabel(payload.priority, lang);
+
+  const messages: Record<SupportedLanguage, string> = {
+    es: (
+      `⏱️ *Ticket sin iniciar · #${payload.ticketIdCode} · ${abbr}*\n` +
+      `📋 ${payload.ticketTitle}${room}\n` +
+      `🏠 Área: ${area} · Prioridad: ${prio}\n\n` +
+      `Este ticket fue asignado pero lleva demasiado tiempo sin iniciarse.`
+    ),
+    pt: (
+      `⏱️ *Ticket não iniciado · #${payload.ticketIdCode} · ${abbr}*\n` +
+      `📋 ${payload.ticketTitle}${room}\n` +
+      `🏠 Área: ${area} · Prioridade: ${prio}\n\n` +
+      `Este ticket foi atribuído mas está há muito tempo sem ser iniciado.`
+    ),
+    en: (
+      `⏱️ *Unstarted ticket · #${payload.ticketIdCode} · ${abbr}*\n` +
+      `📋 ${payload.ticketTitle}${room}\n` +
+      `🏠 Area: ${area} · Priority: ${prio}\n\n` +
+      `This ticket was assigned but has not been started in too long.`
+    ),
+  };
+  return messages[lang];
+}
+
 export function ticketCreatedFromGuest(
   payload: CreatedFromGuestPayload,
   lang: SupportedLanguage = 'es',

@@ -6,6 +6,7 @@ import { runConversationCsatWorker } from './workers/conversation-csat.worker';
 import { runTicketNotifyWorker } from './workers/ticket-notify.worker';
 import { runNotificationQueueWorker } from './workers/notification-queue.worker';
 import { runMorningReminderWorker }   from './workers/morning-reminder.worker';
+import { runTicketEscalationWorker } from './workers/ticket-escalation.worker';
 
 // ── Servidor HTTP ─────────────────────────────────────────────────────────────
 const app = createApp();
@@ -32,6 +33,9 @@ cron.schedule(cronExpression, () => {
   runNotificationQueueWorker().catch((err) =>
     console.error('[notification-service] Error inesperado en notification-queue-worker:', err),
   );
+  runTicketEscalationWorker().catch((err) =>
+    console.error('[notification-service] Error inesperado en ticket-escalation-worker:', err),
+  );
 });
 
 // ── Cron del morning reminder — cada minuto ───────────────────────────────────
@@ -47,3 +51,4 @@ runCsatWorker().catch(console.error);
 runConversationCsatWorker().catch(console.error);
 runTicketNotifyWorker().catch(console.error);
 runNotificationQueueWorker().catch(console.error);
+runTicketEscalationWorker().catch(console.error);

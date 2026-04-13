@@ -22,6 +22,9 @@ export interface TicketDto {
   /** Estado que disparó la notificación (guardado en el backend al momento del cambio). */
   notifyGuestStatus: string | null;
   createdAt: string;
+  updatedAt: string;
   dueAt: string | null;
   photoUrl: string | null;
+  unassignedAlertSentAt: string | null;
+  unstartedAlertSentAt: string | null;
 }

@@ -20,6 +20,10 @@ export const FeatureFlagKeys = {
   NOTIFICATION_TICKET_CREATED_FROM_GUEST_TO_SUPERVISOR: 'notification_ticket_created_from_guest_to_supervisor_enabled',
   NOTIFICATION_MORNING_REMINDER:                    'notification_morning_reminder_enabled',
 
+  // ── Escalación de tickets ─────────────────────────────────────────────────
+  NOTIFICATION_TICKET_ESCALATION_UNASSIGNED:        'notification_ticket_escalation_unassigned_enabled',
+  NOTIFICATION_TICKET_ESCALATION_UNSTARTED:         'notification_ticket_escalation_unstarted_enabled',
+
   // ── Campañas y broadcast ──────────────────────────────────────────────────
   NOTIFICATION_BROADCAST:                           'notification_broadcast_enabled',
 } as const;

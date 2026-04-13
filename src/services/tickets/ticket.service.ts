@@ -36,3 +36,39 @@ export async function markNotified(ticketId: string): Promise<TicketDto | null> 
   }
   return data;
 }
+
+// ── Escalation ─────────────────────────────────────────────────────────────────
+
+export async function getEscalationUnassigned(): Promise<TicketDto[]> {
+  const client = getNestjsClient();
+  const data = await client._get<TicketDto[]>(TicketEndpoints.ESCALATION_UNASSIGNED);
+  return data ?? [];
+}
+
+export async function getEscalationUnstarted(): Promise<TicketDto[]> {
+  const client = getNestjsClient();
+  const data = await client._get<TicketDto[]>(TicketEndpoints.ESCALATION_UNSTARTED);
+  return data ?? [];
+}
+
+export async function markUnassignedAlertSent(ticketId: string): Promise<void> {
+  const client = getNestjsClient();
+  const data = await client._patch<TicketDto>(
+    TicketEndpoints.BY_ID.replace('{id}', ticketId),
+    { unassignedAlertSentAt: new Date().toISOString() },
+  );
+  if (!data) {
+    console.error('[ticket-service] mark_unassigned_alert_sent_failed', { ticketId });
+  }
+}
+
+export async function markUnstartedAlertSent(ticketId: string): Promise<void> {
+  const client = getNestjsClient();
+  const data = await client._patch<TicketDto>(
+    TicketEndpoints.BY_ID.replace('{id}', ticketId),
+    { unstartedAlertSentAt: new Date().toISOString() },
+  );
+  if (!data) {
+    console.error('[ticket-service] mark_unstarted_alert_sent_failed', { ticketId });
+  }
+}
