@@ -24,7 +24,7 @@ import {
  * 6. Envía el mensaje según notifyGuestStatus (assigned | in_progress | resolved).
  *    notifyGuestStatus captura el estado exacto que disparó la notificación,
  *    evitando enviar el mensaje equivocado si el ticket cambió de estado otra vez.
- * 7. Si el estado era 'resolved' y bot_csat_tickets_enabled, crea csat_surveys pending
+ * 7. Si el estado era 'finished' o 'resolved' y bot_csat_tickets_enabled, crea csat_surveys pending
  *    para que el csat.worker envíe el survey en el siguiente ciclo.
  * 8. Marca notifyGuestPending=false para no reenviar en el siguiente ciclo.
  */
@@ -107,10 +107,10 @@ async function processTicketNotification(ticket: TicketDto): Promise<void> {
     console.log('[ticket-notify-worker] csat_decision', {
       ticketId: ticket.id,
       statusToNotify,
-      willAttemptCsat: statusToNotify === 'resolved',
+      willAttemptCsat: statusToNotify === 'resolved' || statusToNotify === 'finished',
     });
 
-    if (statusToNotify === 'resolved') {
+    if (statusToNotify === 'resolved' || statusToNotify === 'finished') {
       const csatEnabled = await featureFlags.isEnabled(
         ticket.propertyId,
         FeatureFlagKeys.BOT_CSAT_TICKETS,
