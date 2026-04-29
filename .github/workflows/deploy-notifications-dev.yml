@@ -1,0 +1,50 @@
+name: Deploy Notifications DEV to Cloud Run
+
+on:
+  push:
+    branches: [develop]
+
+env:
+  PROJECT_ID: hestia-production-491816
+  REGION: us-central1
+  IMAGE: us-central1-docker.pkg.dev/hestia-production-491816/hestia-images/notifications-dev
+  SERVICE: hestia-notifications-dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Auth con Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Configurar Docker para Artifact Registry
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      - name: Build y push imagen Docker
+        run: |
+          docker build -t ${{ env.IMAGE }}:${{ github.sha }} .
+          docker push ${{ env.IMAGE }}:${{ github.sha }}
+
+      - name: Deploy a Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE }} \
+            --image=${{ env.IMAGE }}:${{ github.sha }} \
+            --region=${{ env.REGION }} \
+            --platform=managed \
+            --no-allow-unauthenticated \
+            --memory=512Mi \
+            --cpu=1 \
+            --min-instances=1 \
+            --max-instances=1 \
+            --set-secrets="HESTIA_API_KEY=HESTIA_API_KEY:latest,WHATSAPP_VERIFY_TOKEN=WHATSAPP_VERIFY_TOKEN:latest" \
+            --set-env-vars="HESTIA_API_URL=https://hestia-backend-dev-tqx2cctruq-uc.a.run.app,POLLING_INTERVAL_SECONDS=30,FAQ_SURVEY_DELAY_SECONDS=60"
