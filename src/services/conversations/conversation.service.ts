@@ -42,7 +42,7 @@ export async function markCsatSent(conversationId: string): Promise<Conversation
   const client = getNestjsClient();
   const data = await client._put<ConversationDto>(
     ConversationEndpoints.BY_ID.replace('{id}', conversationId),
-    { csatRequired: false }, // false = ya procesado → el filtro faqCsatReady lo excluye en próximos ciclos
+    { csatRequired: true }, // true = ya procesado → el filtro faqCsatReady (csatRequired=false) lo excluye en próximos ciclos
   );
   if (!data) {
     console.error('[conversation-service] mark_csat_sent_failed', { conversationId });
