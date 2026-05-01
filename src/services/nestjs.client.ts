@@ -54,6 +54,7 @@ class NestjsClient {
         });
 
         if (response.status === 404) {
+          console.warn('[nestjs-client] not_found', { method, path, url });
           return null;
         }
 
